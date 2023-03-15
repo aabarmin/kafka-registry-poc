@@ -1,0 +1,45 @@
+version: '3.5'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    healthcheck:
+      test: echo srvr | nc zookeeper 2181 || exit 1
+      retries: 20
+      interval: 10s
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+      - ZOOKEEPER_SYNC_LIMIT=2
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - main
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    healthcheck:
+      test: nc -z localhost 29092 || exit -1
+      interval: 10s
+      retries: 5
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:29092
+      - KAFKA_BROKER_ID=2
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    ports:
+      - 29092:29092
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - main
+
+networks:
+  main:
